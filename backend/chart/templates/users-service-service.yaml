@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+  namespace: {{ .Values.backendNamespace }}
+  labels:
+    app: users-service
+spec:
+  type: ClusterIP
+  selector:
+    app: users-service
+  ports:
+    - port: {{ .Values.users.port }}
+      targetPort: {{ .Values.users.port }}
+      protocol: TCP
+      name: http

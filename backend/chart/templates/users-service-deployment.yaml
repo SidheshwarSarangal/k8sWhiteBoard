@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+  namespace: {{ .Values.backendNamespace }}
+  labels:
+    app: users-service
+spec:
+  replicas: {{ .Values.users.replicas }}
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      containers:
+        - name: users-service
+          image: "{{ .Values.users.image }}:{{ .Values.users.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.users.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.users.port | toString }}"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: MONGO_URI
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.users.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.users.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5

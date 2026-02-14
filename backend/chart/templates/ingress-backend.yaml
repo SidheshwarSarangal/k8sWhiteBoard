@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: whiteboard-backend
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Values.backendNamespace }}
   annotations:
     {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
@@ -48,4 +48,11 @@ spec:
                 name: realtime-service
                 port:
                   number: {{ .Values.realtime.port }}
+          - path: /api/users
+            pathType: Prefix
+            backend:
+              service:
+                name: users-service
+                port:
+                  number: {{ .Values.users.port }}
 {{- end }}

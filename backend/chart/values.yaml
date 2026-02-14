@@ -1,5 +1,6 @@
-# Namespace for all backend resources
-namespace: whiteboard
+# Two namespaces: backend and frontend
+backendNamespace: whiteboard-backend
+frontendNamespace: whiteboard-frontend
 
 # Secret with MONGO_URI and JWT_SECRET (create with kubectl create secret generic auth-secrets ...)
 secretName: auth-secrets
@@ -42,4 +43,18 @@ realtime:
   image: realtime-service
   tag: latest
   port: 3004
+  replicas: 1
+
+users:
+  image: users-service
+  tag: latest
+  port: 3005
+  replicas: 1
+
+# Frontend (React SPA); when enabled, Ingress path / serves the UI
+frontend:
+  enabled: true
+  image: frontend
+  tag: latest
+  port: 80
   replicas: 1

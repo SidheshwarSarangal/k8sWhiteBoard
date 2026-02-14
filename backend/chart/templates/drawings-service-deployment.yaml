@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: drawings-service
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Values.backendNamespace }}
   labels:
     app: drawings-service
 spec:

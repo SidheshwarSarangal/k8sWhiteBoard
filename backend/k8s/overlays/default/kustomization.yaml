@@ -2,6 +2,6 @@
 # Apply with: kubectl apply -k k8s/overlays/default
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: whiteboard
+namespace: whiteboard-backend
 resources:
   - ../../base

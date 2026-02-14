@@ -13,10 +13,10 @@ Whiteboard auth microservice: signup, login, JWT.
 1. Create kind cluster (if not done):  
    `kind create cluster --name whiteboard`
 
-2. Create namespace (once for entire backend) and secret. From `whiteboardK8s/backend/`:
+2. Create backend namespace and secret (or use Helm, which creates namespaces):
    ```bash
-   kubectl apply -f k8s/namespace.yaml
-   kubectl create secret generic auth-secrets -n whiteboard \
+   kubectl create namespace whiteboard-backend
+   kubectl create secret generic auth-secrets -n whiteboard-backend \
      --from-literal=MONGO_URI='mongodb+srv://<user>:<password>@cluster0.onuyxhs.mongodb.net/whiteboard' \
      --from-literal=JWT_SECRET=<your-jwt-secret>
    ```
@@ -28,15 +28,15 @@ Whiteboard auth microservice: signup, login, JWT.
    kind load docker-image auth-service:latest --name whiteboard
    ```
 
-4. Deploy:
+4. Deploy (ensure deployment/service YAML use namespace whiteboard-backend, or apply with -n whiteboard-backend):
    ```bash
-   kubectl apply -f k8s/deployment.yaml
-   kubectl apply -f k8s/service.yaml
+   kubectl apply -f k8s/deployment.yaml -n whiteboard-backend
+   kubectl apply -f k8s/service.yaml -n whiteboard-backend
    ```
 
 5. Test:
    ```bash
-   kubectl port-forward svc/auth-service 3000:3000 -n whiteboard
+   kubectl port-forward svc/auth-service 3000:3000 -n whiteboard-backend
    curl http://localhost:3000/health
    curl -X POST http://localhost:3000/api/auth/signup -H "Content-Type: application/json" -d '{"username":"test","password":"test"}'
    ```

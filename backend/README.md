@@ -36,15 +36,16 @@ backend/
 
 1. Create namespace and secret, build and load images (see **chart/README.md** for full steps).
 
-2. Install the chart:
+2. Install the chart (creates **whiteboard-backend** and **whiteboard-frontend** namespaces):
    ```bash
    cd whiteboardK8s/backend
-   helm install backend ./chart -n whiteboard
+   helm install backend ./chart --create-namespace -n whiteboard-backend
    ```
+   Create secret in backend namespace: `kubectl create secret generic auth-secrets -n whiteboard-backend ...`
 
 3. Upgrade later:
    ```bash
-   helm upgrade backend ./chart -n whiteboard
+   helm upgrade backend ./chart -n whiteboard-backend
    ```
 
 See **chart/README.md** for install, upgrade, uninstall, and value overrides.
