@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drawings-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: drawings-service
+spec:
+  replicas: {{ .Values.drawings.replicas }}
+  selector:
+    matchLabels:
+      app: drawings-service
+  template:
+    metadata:
+      labels:
+        app: drawings-service
+    spec:
+      containers:
+        - name: drawings-service
+          image: "{{ .Values.drawings.image }}:{{ .Values.drawings.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.drawings.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.drawings.port | toString }}"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: JWT_SECRET
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.drawings.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.drawings.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5

@@ -1,29 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-service
-  namespace: whiteboard
+  name: messages-service
   labels:
-    app: auth-service
+    app: messages-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: auth-service
+      app: messages-service
   template:
     metadata:
       labels:
-        app: auth-service
+        app: messages-service
     spec:
       containers:
-        - name: auth-service
-          image: auth-service:latest
+        - name: messages-service
+          image: messages-service:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 3000
+            - containerPort: 3003
           env:
             - name: PORT
-              value: "3000"
+              value: "3003"
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
@@ -37,12 +36,12 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 3000
+              port: 3003
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
-              port: 3000
+              port: 3003
             initialDelaySeconds: 5
             periodSeconds: 5

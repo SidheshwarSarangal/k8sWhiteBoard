@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: messages-service
-  namespace: whiteboard
+  namespace: {{ .Values.namespace }}
   labels:
     app: messages-service
 spec:
-  replicas: 1
+  replicas: {{ .Values.messages.replicas }}
   selector:
     matchLabels:
       app: messages-service
@@ -17,32 +17,32 @@ spec:
     spec:
       containers:
         - name: messages-service
-          image: messages-service:latest
+          image: "{{ .Values.messages.image }}:{{ .Values.messages.tag }}"
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 3003
+            - containerPort: {{ .Values.messages.port }}
           env:
             - name: PORT
-              value: "3003"
+              value: "{{ .Values.messages.port | toString }}"
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: {{ .Values.secretName }}
                   key: MONGO_URI
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: auth-secrets
+                  name: {{ .Values.secretName }}
                   key: JWT_SECRET
           livenessProbe:
             httpGet:
               path: /health
-              port: 3003
+              port: {{ .Values.messages.port }}
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
-              port: 3003
+              port: {{ .Values.messages.port }}
             initialDelaySeconds: 5
             periodSeconds: 5

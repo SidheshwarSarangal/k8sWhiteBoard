@@ -1,0 +1,7 @@
+# Overlay: applies base with namespace and optional patches.
+# Apply with: kubectl apply -k k8s/overlays/default
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: whiteboard
+resources:
+  - ../../base

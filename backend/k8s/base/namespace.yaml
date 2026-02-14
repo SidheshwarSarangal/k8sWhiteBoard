@@ -1,4 +1,3 @@
-# Single namespace for entire backend (auth, rooms, drawings, messages, realtime)
 apiVersion: v1
 kind: Namespace
 metadata:

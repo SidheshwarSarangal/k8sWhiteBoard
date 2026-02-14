@@ -1,0 +1,51 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whiteboard-backend
+  namespace: {{ .Values.namespace }}
+  annotations:
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - http:
+        paths:
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: {{ .Values.auth.port }}
+          - path: /api/rooms
+            pathType: Prefix
+            backend:
+              service:
+                name: rooms-service
+                port:
+                  number: {{ .Values.rooms.port }}
+          - path: /api/drawings
+            pathType: Prefix
+            backend:
+              service:
+                name: drawings-service
+                port:
+                  number: {{ .Values.drawings.port }}
+          - path: /api/messages
+            pathType: Prefix
+            backend:
+              service:
+                name: messages-service
+                port:
+                  number: {{ .Values.messages.port }}
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: realtime-service
+                port:
+                  number: {{ .Values.realtime.port }}
+{{- end }}

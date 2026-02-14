@@ -1,0 +1,12 @@
+# Base: shared resources and per-component configs.
+# See https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - ingress.yaml
+  - auth-service
+  - rooms-service
+  - drawings-service
+  - messages-service
+  - realtime-service

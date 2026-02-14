@@ -1,26 +1,80 @@
 # Backend (microservices)
 
-All services run in **one namespace**: `whiteboard`.
+**Helm** is the primary way to deploy and manage the backend (releases, upgrades, rollbacks, value overrides). **Kustomize** (`k8s/base` + `k8s/overlays`) is kept for reference and as an alternative.
 
-## Deploy order (after kind cluster is up)
+## Structure
 
-1. **Create namespace once** (from this folder):
+```
+backend/
+├── README.md
+├── chart/                            # Helm chart (primary deploy)
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   ├── README.md
+│   └── templates/                    # Namespace, Ingress, 5× (Deployment + Service)
+├── k8s/                              # Kustomize (alternative / reference)
+│   ├── base/                         # Template-free YAML per component
+│   │   ├── kustomization.yaml
+│   │   ├── namespace.yaml
+│   │   ├── ingress.yaml
+│   │   ├── auth-service/
+│   │   ├── rooms-service/
+│   │   ├── drawings-service/
+│   │   ├── messages-service/
+│   │   └── realtime-service/
+│   └── overlays/
+│       └── default/
+│           └── kustomization.yaml
+├── auth-service/                     # App code + Dockerfile only
+├── rooms-service/
+├── drawings-service/
+├── messages-service/
+└── realtime-service/
+```
+
+## Deploy (Helm — recommended)
+
+1. Create namespace and secret, build and load images (see **chart/README.md** for full steps).
+
+2. Install the chart:
    ```bash
-   kubectl apply -f k8s/namespace.yaml
+   cd whiteboardK8s/backend
+   helm install backend ./chart -n whiteboard
    ```
 
-2. **Create secret** (MONGO_URI, JWT_SECRET) — see auth-service README.
+3. Upgrade later:
+   ```bash
+   helm upgrade backend ./chart -n whiteboard
+   ```
 
-3. **Build, load, and deploy each service** (auth, rooms, drawings, messages, realtime) — see each service’s README.
+See **chart/README.md** for install, upgrade, uninstall, and value overrides.
+
+## Deploy (Kustomize — alternative)
+
+Same prerequisites (secret, images). Then:
+
+```bash
+cd whiteboardK8s/backend
+kubectl apply -k k8s/overlays/default
+```
+
+Preview: `kubectl kustomize k8s/overlays/default`  
+Delete: `kubectl delete -k k8s/overlays/default`
+
+## Optional: Ingress controller (Kind)
+
+For path-based routing from outside the cluster:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+```
 
 ## Services
 
-| Service         | Port | Path           |
-|----------------|------|----------------|
-| auth-service   | 3000 | auth-service/  |
-| rooms-service  | 3001 | rooms-service/ |
-| drawings-service | 3002 | drawings-service/ |
-| messages-service | 3003 | messages-service/ |
-| realtime-service | 3004 | realtime-service/ |
-
-All use namespace `whiteboard`; namespace is defined in `k8s/namespace.yaml` (this folder).
+| Service          | Port | Path         |
+|------------------|------|--------------|
+| auth-service     | 3000 | /api/auth    |
+| rooms-service    | 3001 | /api/rooms   |
+| drawings-service | 3002 | /api/drawings|
+| messages-service | 3003 | /api/messages|
+| realtime-service | 3004 | /socket.io   |

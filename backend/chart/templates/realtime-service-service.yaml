@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: realtime-service
-  namespace: whiteboard
+  namespace: {{ .Values.namespace }}
   labels:
     app: realtime-service
 spec:
@@ -10,7 +10,7 @@ spec:
   selector:
     app: realtime-service
   ports:
-    - port: 3004
-      targetPort: 3004
+    - port: {{ .Values.realtime.port }}
+      targetPort: {{ .Values.realtime.port }}
       protocol: TCP
       name: http

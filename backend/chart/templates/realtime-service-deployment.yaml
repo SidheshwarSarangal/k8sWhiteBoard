@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: realtime-service
-  namespace: whiteboard
+  namespace: {{ .Values.namespace }}
   labels:
     app: realtime-service
 spec:
-  replicas: 1
+  replicas: {{ .Values.realtime.replicas }}
   selector:
     matchLabels:
       app: realtime-service
@@ -17,28 +17,22 @@ spec:
     spec:
       containers:
         - name: realtime-service
-          image: realtime-service:latest
+          image: "{{ .Values.realtime.image }}:{{ .Values.realtime.tag }}"
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 3004
+            - containerPort: {{ .Values.realtime.port }}
           env:
             - name: PORT
-              value: "3004"
-          # Optional: uncomment when Redis is deployed for multi-replica Socket.IO
-          # - name: REDIS_URL
-          #   valueFrom:
-          #     secretKeyRef:
-          #       name: realtime-secrets
-          #       key: REDIS_URL
+              value: "{{ .Values.realtime.port | toString }}"
           livenessProbe:
             httpGet:
               path: /health
-              port: 3004
+              port: {{ .Values.realtime.port }}
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
-              port: 3004
+              port: {{ .Values.realtime.port }}
             initialDelaySeconds: 5
             periodSeconds: 5

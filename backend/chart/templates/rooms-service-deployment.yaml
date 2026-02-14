@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rooms-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: rooms-service
+spec:
+  replicas: {{ .Values.rooms.replicas }}
+  selector:
+    matchLabels:
+      app: rooms-service
+  template:
+    metadata:
+      labels:
+        app: rooms-service
+    spec:
+      containers:
+        - name: rooms-service
+          image: "{{ .Values.rooms.image }}:{{ .Values.rooms.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.rooms.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.rooms.port | toString }}"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: JWT_SECRET
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.rooms.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.rooms.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5

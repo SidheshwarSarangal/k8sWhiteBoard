@@ -1,0 +1,9 @@
+apiVersion: v2
+name: whiteboard-backend
+description: Backend microservices for whiteboard (auth, rooms, drawings, messages, realtime)
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - whiteboard
+  - microservices

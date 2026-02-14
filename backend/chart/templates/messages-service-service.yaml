@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: messages-service
-  namespace: whiteboard
+  namespace: {{ .Values.namespace }}
   labels:
     app: messages-service
 spec:
@@ -10,7 +10,7 @@ spec:
   selector:
     app: messages-service
   ports:
-    - port: 3003
-      targetPort: 3003
+    - port: {{ .Values.messages.port }}
+      targetPort: {{ .Values.messages.port }}
       protocol: TCP
       name: http

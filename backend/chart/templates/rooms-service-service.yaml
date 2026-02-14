@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rooms-service
-  namespace: whiteboard
+  namespace: {{ .Values.namespace }}
   labels:
     app: rooms-service
 spec:
@@ -10,7 +10,7 @@ spec:
   selector:
     app: rooms-service
   ports:
-    - port: 3001
-      targetPort: 3001
+    - port: {{ .Values.rooms.port }}
+      targetPort: {{ .Values.rooms.port }}
       protocol: TCP
       name: http
