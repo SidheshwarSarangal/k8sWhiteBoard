@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messages-service
+  namespace: whiteboard
+  labels:
+    app: messages-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: messages-service
+  template:
+    metadata:
+      labels:
+        app: messages-service
+    spec:
+      containers:
+        - name: messages-service
+          image: messages-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3003
+          env:
+            - name: PORT
+              value: "3003"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: JWT_SECRET
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 5
+            periodSeconds: 5

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realtime-service
+  namespace: whiteboard
+  labels:
+    app: realtime-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: realtime-service
+  template:
+    metadata:
+      labels:
+        app: realtime-service
+    spec:
+      containers:
+        - name: realtime-service
+          image: realtime-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3004
+          env:
+            - name: PORT
+              value: "3004"
+          # Optional: uncomment when Redis is deployed for multi-replica Socket.IO
+          # - name: REDIS_URL
+          #   valueFrom:
+          #     secretKeyRef:
+          #       name: realtime-secrets
+          #       key: REDIS_URL
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 5
+            periodSeconds: 5
