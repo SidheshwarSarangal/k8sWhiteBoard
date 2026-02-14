@@ -13,7 +13,7 @@ Whiteboard auth microservice: signup, login, JWT.
 1. Create kind cluster (if not done):  
    `kind create cluster --name whiteboard`
 
-2. Create namespace and secret (MongoDB Atlas — same DB for all microservices, each service uses its own collections). Run this once; replace the placeholders with your real values (do not commit real credentials to Git):
+2. Create namespace (once for entire backend) and secret. From `whiteboardK8s/backend/`:
    ```bash
    kubectl apply -f k8s/namespace.yaml
    kubectl create secret generic auth-secrets -n whiteboard \
