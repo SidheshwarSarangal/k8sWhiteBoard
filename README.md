@@ -121,3 +121,11 @@ kubectl delete namespace whiteboard-backend --ignore-not-found
 kubectl delete namespace whiteboard-frontend --ignore-not-found
 kind delete cluster --name whiteboard
 ```
+
+---
+
+## Detailed study of this project steps and methods
+
+[Study](https://github.com/SidheshwarSarangal/study-of-k8s-method-project-of-white-board.git)
+
+---
