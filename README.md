@@ -126,6 +126,8 @@ kind delete cluster --name whiteboard
 
 ## Detailed study of this project steps and methods
 
-[Study](https://github.com/SidheshwarSarangal/study-of-k8s-method-project-of-white-board.git)
+- Here in the following, I have put the detailed steps, how this project was created, in order to get better understanding. Look at its readme.
+
+- [K8s Project study repo link](https://github.com/SidheshwarSarangal/study-of-k8s-method-project-of-white-board.git)
 
 ---
