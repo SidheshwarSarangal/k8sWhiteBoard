@@ -1,20 +1,12 @@
-# Messages Service
+# messages-service
 
-Whiteboard chat microservice: send message, get messages by room. All routes require Bearer token.
+**What it does:** Send chat message, get messages by room.
 
-## Run locally (no Docker/K8s)
+**Connections:**
+- **MongoDB** — `MONGO_URI` (from `auth-secrets`). Uses `Message` model.
+- **Ingress:** `/api/messages`.
 
-1. Copy `.env.example` to `.env`, set `MONGO_URI` and `JWT_SECRET`.
-2. `npm install && npm start` — listens on port 3003.
+**Port:** 3003  
+**Env:** `MONGO_URI`, `JWT_SECRET` (from `auth-secrets`). See `.env.example`.
 
-## Deploy on kind
-
-1. `docker build -t messages-service:latest .`
-2. `kind load docker-image messages-service:latest --name whiteboard`
-3. `kubectl apply -f k8s/deployment.yaml` and `kubectl apply -f k8s/service.yaml`
-
-## Endpoints (require Authorization: Bearer <token>)
-
-- `GET /health` — health check (no auth)
-- `POST /api/messages` — send message (body: roomId, sender, text)
-- `GET /api/messages/:roomId` — get messages for room
+**Routes:** `POST /`, `GET /:roomId`. Both require JWT.

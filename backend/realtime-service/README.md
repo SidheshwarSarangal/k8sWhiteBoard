@@ -1,29 +1,13 @@
-# Realtime Service
+# realtime-service
 
-Socket.IO microservice for whiteboard: drawing sync, room join/leave, chat. No MongoDB; optional Redis for multi-replica.
+**What it does:** Socket.IO server for real-time drawing, room join/leave, chat, and user list in a room.
 
-## Events
+**Connections:**
+- **No MongoDB.** Optional **Redis** — `REDIS_URL` for multi-replica Socket.IO adapter; if unset, in-memory (single replica).
+- **Ingress:** `/socket.io`.
+- **Clients:** Browser connects to same origin (or `SOCKET_URL`); joins rooms and emits drawing/chat/room events.
 
-- **join_room** — client sends `{ roomId, username }`; server joins socket to room, broadcasts `user_joined`.
-- **drawing** — client sends `{ roomId, stroke }`; server broadcasts to others in room.
-- **drawing_deleted** — client sends `{ roomId, strokeId }`; server broadcasts.
-- **clear_canvas** — client sends `{ roomId }`; server broadcasts `canvas_cleared`.
-- **get_users** — client sends `roomId`, callback returns list of socket IDs in room.
-- **send_message** — client sends `{ roomId, message }`; server broadcasts `receive_message`.
+**Port:** 3004  
+**Env:** `REDIS_URL` (optional). See `.env.example`.
 
-## Run locally (no Docker/K8s)
-
-1. Copy `.env.example` to `.env` if you need REDIS_URL.
-2. `npm install && npm start` — listens on port 3004. Frontend connects to `http://localhost:3004` for Socket.IO.
-
-## Deploy on kind
-
-1. `docker build -t realtime-service:latest .`
-2. `kind load docker-image realtime-service:latest --name whiteboard`
-3. `kubectl apply -f k8s/deployment.yaml` and `kubectl apply -f k8s/service.yaml`
-
-For **multiple replicas** (e.g. HPA), run Redis in the cluster, create a secret with `REDIS_URL`, and set it in deployment env so the Redis adapter is used.
-
-## Endpoints
-
-- `GET /health` — health check
+**Events:** `drawing`, `drawing_deleted`, `clear_canvas`; `join_room`, `user_joined`, `user_left`; `send_message`, `receive_message`; `get_users`.

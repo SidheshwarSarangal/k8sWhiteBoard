@@ -1,35 +1,12 @@
-# Frontend (Whiteboard React app)
+# frontend
 
-Vite + React app; uses `VITE_API_URL` for API and Socket.IO base URL (empty = same origin).
+**What it does:** React SPA — sign-in/sign-up, home, rooms, whiteboard canvas, real-time drawing and chat via Socket.IO.
 
-## Run locally
+**Connections:**
+- **API** — `API_BASE` (from `VITE_API_URL` at build time). Empty = same origin; used for `/api/auth`, `/api/rooms`, `/api/drawings`, `/api/messages`, `/api/users`.
+- **Socket.IO** — `SOCKET_URL` (same as `API_BASE` or `window.location.origin`). Single realtime-service behind Ingress path `/socket.io`.
+- **Served in cluster:** nginx on port 80; Ingress path `/` → this service.
 
-```bash
-npm install
-# Optional: set API base (e.g. backend running elsewhere)
-# echo "VITE_API_URL=http://localhost:8080" > .env
-npm run dev
-```
+**Build:** `VITE_API_URL` set only when API is on a different host; for same-origin Ingress leave unset. See `.env.example`.
 
-## Build for production (same origin / Ingress)
-
-Build with no `VITE_API_URL` so the app uses relative URLs; then the browser sends `/api/*` and `/socket.io` to the same host (the Ingress):
-
-```bash
-npm run build
-```
-
-## Docker
-
-```bash
-# Build (optional: --build-arg VITE_API_URL=http://your-ingress-url)
-docker build -t frontend:latest .
-```
-
-## Deploy on Kubernetes (namespace whiteboard)
-
-1. Build and load into kind: `docker build -t frontend:latest . && kind load docker-image frontend:latest --name whiteboard`
-2. Apply: `kubectl apply -f k8s/deployment.yaml` and `kubectl apply -f k8s/service.yaml`
-3. Ensure Ingress routes `/` to the frontend service so the app is served from the same host as `/api` and `/socket.io` (then no `VITE_API_URL` needed).
-
-Or use the backend Helm chart with `frontend.enabled: true` to deploy backend + frontend and Ingress together.
+**Deploy:** Dockerfile (build + nginx); chart or `k8s/` use namespace `whiteboard-frontend`.
