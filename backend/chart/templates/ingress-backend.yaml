@@ -13,6 +13,13 @@ spec:
   rules:
     - http:
         paths:
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: {{ .Values.auth.port }}
           - path: /api/auth
             pathType: Prefix
             backend:
