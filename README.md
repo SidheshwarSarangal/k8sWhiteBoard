@@ -1,133 +1,170 @@
-# WhiteboardK8s
+# Whiteboard on Kubernetes
 
-Real-time collaborative whiteboard (React + Node + Socket.IO) run as microservices on Kubernetes. Two namespaces: **whiteboard-backend** (six API services + optional in-cluster MongoDB) and **whiteboard-frontend** (SPA). Single entrypoint via **NGINX Ingress** (path-based routing).
+**A real-time collaborative whiteboard rebuilt as independently managed microservices inside Kubernetes.**
 
----
+Users still create rooms, draw together, control access, and export boards. Kubernetes changes how those capabilities are packaged, routed, monitored, and operated.
 
-## Overview
+## Product experience
 
-- **Frontend:** React SPA served at `/`; calls `/api/*` and connects to `/socket.io` for real-time drawing and chat.
-- **Backend:** auth (3000), rooms (3001), drawings (3002), messages (3003), realtime/Socket.IO (3004), users (3005). All except realtime use MongoDB; realtime is Socket.IO only (optional Redis for multi-replica).
-- **Ingress:** NGINX Ingress Controller routes `/` → frontend, `/api/auth`, `/api/rooms`, `/api/drawings`, `/api/messages`, `/api/users`, `/socket.io`, `/health` → backend services in `whiteboard-backend`.
-- **Data:** `auth-secrets` holds `MONGO_URI` and `JWT_SECRET`. Use Atlas or in-cluster MongoDB (see `backend/k8s/mongodb.yaml` and `backend/k8s/README.md`).
+```mermaid
+flowchart LR
+    A[Person A] --> Room[Shared room]
+    B[Person B] --> Room
+    Viewer[View-only guest] --> Room
 
----
+    Room --> Draw[Draw + write]
+    Room --> Live[See changes live]
+    Room --> Access[Public / private access]
+    Room --> Export[PNG / JPG / PDF]
+```
 
-## Connections
+## Why Kubernetes?
 
-| From            | To                | How |
-|-----------------|-------------------|-----|
-| Browser         | App + API + Socket| `http://localhost` (Ingress: `/` → frontend, `/api/*`, `/socket.io`, `/health` → backend) |
-| Ingress         | Backend / Frontend| Path-based rules; backend Ingress in `whiteboard-backend`, frontend Ingress in `whiteboard-frontend` |
-| Backend pods    | MongoDB           | `MONGO_URI` from secret `auth-secrets` (e.g. `mongodb://mongodb:27017/whiteboard` in-cluster) |
-| Backend pods    | JWT validation    | `JWT_SECRET` from `auth-secrets` |
-| Frontend pod    | Backend           | Same origin when served behind same Ingress host (no extra env) |
+The original application uses one backend. This version gives each responsibility its own service.
 
----
+```mermaid
+flowchart LR
+    Original[One backend] --> Split{Split by responsibility}
+    Split --> Auth[Accounts]
+    Split --> Rooms[Rooms]
+    Split --> Drawings[Drawings]
+    Split --> Messages[Messages]
+    Split --> Realtime[Live events]
+    Split --> Users[User profiles]
 
-## Technologies
+    Kubernetes[Kubernetes] --> Manage[Runs + monitors each service]
+    Manage --> Split
+```
 
-- **Orchestration:** Kubernetes (Kind), Helm  
-- **Ingress:** NGINX Ingress Controller (deploy for Kind: `ingress-nginx`)  
-- **Backend:** Node.js, Express, MongoDB (Mongoose), Socket.IO, optional Redis  
-- **Frontend:** React, Vite; built and served by nginx in container  
-- **Images:** Docker; built locally and loaded into Kind  
+This makes service boundaries visible and allows each part to be deployed or scaled independently.
 
----
+## Complete system
 
-## Components (Helm chart)
+```mermaid
+flowchart LR
+    Browser[Browser] --> Entry[NGINX Ingress<br/>ports 80 / 443]
 
-- **Namespaces:** `whiteboard-backend`, `whiteboard-frontend`  
-- **Deployments:** auth-service, rooms-service, drawings-service, messages-service, realtime-service, users-service (all in backend); frontend (in frontend). Optional: MongoDB Deployment in backend (see `backend/k8s/`).  
-- **Services:** One ClusterIP Service per Deployment.  
-- **Ingress:** `whiteboard-backend` (backend paths), `whiteboard-frontend` (path `/`).  
-- **Secret:** `auth-secrets` in `whiteboard-backend` (MONGO_URI, JWT_SECRET).  
+    subgraph FrontNS[whiteboard-frontend]
+        Frontend[React + nginx]
+    end
 
----
+    subgraph BackNS[whiteboard-backend]
+        Auth[Auth :3000]
+        Rooms[Rooms :3001]
+        Drawings[Drawings :3002]
+        Messages[Messages :3003]
+        Realtime[Realtime :3004]
+        Users[Users :3005]
+        Secret[auth-secrets]
+        Mongo[(MongoDB or Atlas)]
+    end
 
-## Commands (run from repo root; Kind + in-cluster MongoDB)
+    Entry --> Frontend
+    Entry --> Auth & Rooms & Drawings & Messages & Realtime & Users
+    Auth & Rooms & Drawings & Messages & Users --> Mongo
+    Secret -. configuration .-> Auth & Rooms & Drawings & Messages & Users
+```
 
-**1. Create Kind cluster (port 80/443 exposed)**  
+Two namespace-scoped Ingress resources define the routes, while the NGINX Ingress Controller exposes them through the same cluster entry address.
+
+## One address, seven destinations
+
+```mermaid
+flowchart TD
+    URL[http://localhost] --> Router{Request path}
+    Router -->|/| Frontend[Frontend]
+    Router -->|/api/auth| Auth[Auth service]
+    Router -->|/api/rooms| Rooms[Rooms service]
+    Router -->|/api/drawings| Drawings[Drawings service]
+    Router -->|/api/messages| Messages[Messages service]
+    Router -->|/api/users| Users[Users service]
+    Router -->|/socket.io| Realtime[Realtime service]
+```
+
+The browser does not need to know individual service ports. Ingress reads the path and chooses the destination.
+
+## Real-time drawing path
+
+```mermaid
+sequenceDiagram
+    actor A as Person A
+    participant UI as React canvas
+    participant Draw as Drawings service
+    participant DB as MongoDB
+    participant Live as Realtime service
+    actor B as Person B
+
+    A->>UI: Draw stroke
+    UI->>Draw: Save with JWT
+    Draw->>DB: Persist stroke
+    DB-->>UI: Saved stroke ID
+    UI->>Live: Emit Socket.IO event
+    Live-->>B: Broadcast stroke
+```
+
+MongoDB keeps the drawing for later; Socket.IO makes it appear immediately for connected users.
+
+## Kubernetes in plain language
+
+| Kubernetes object | Role in this project |
+|---|---|
+| Container | Packaged frontend or microservice |
+| Pod | One running copy of a container |
+| Deployment | Keeps the requested pod count healthy |
+| Service | Stable internal address for a pod |
+| Ingress | Routes browser paths to Services |
+| Namespace | Separates frontend and backend resources |
+| Secret | Supplies MongoDB and JWT configuration |
+| Helm | Primary installation and upgrade blueprint |
+| Kustomize | Smaller alternative/reference deployment |
+| Kind | Runs the Kubernetes cluster locally in Docker |
+
+## Deployment journey
+
+```mermaid
+flowchart LR
+    Source[Source code] --> Images[7 Docker images]
+    Images --> Kind[Load into Kind]
+    Secret[Create Secret] --> Helm
+    Kind --> Helm[Install Helm chart]
+    Helm --> Objects[Deployments + Services + Ingress]
+    Objects --> Probes[Health checks]
+    Probes --> Ready[Open localhost]
+```
+
+Helm is the complete route. Kustomize is retained as an alternative backend reference and does not include the users service or frontend.
+
+## Documentation map
+
+| Guide | Covers |
+|---|---|
+| [Architecture](docs/architecture.md) | Namespaces, workloads, networking and dependencies |
+| [Service catalog](docs/services.md) | Every microservice, route, port and data owner |
+| [Request flows](docs/request-flows.md) | Login, rooms, drawing, realtime and view-only paths |
+| [Kubernetes concepts](docs/kubernetes-concepts.md) | Kubernetes objects explained through this project |
+| [Helm deployment](docs/helm-deployment.md) | Complete build, install, verify, upgrade and teardown |
+| [Kustomize deployment](docs/kustomize-deployment.md) | Alternative path and its exact scope |
+| [Data and security](docs/data-and-security.md) | MongoDB, JWT, Secrets and access boundaries |
+| [Operations](docs/operations.md) | Probes, scaling, Redis, resources and troubleshooting |
+| [Local development](docs/local-development.md) | Run services without Kubernetes |
+| [Current implementation](docs/current-implementation.md) | Verified gaps and production next steps |
+
+## Quick deployment outline
+
 ```bash
 kind create cluster --name whiteboard --config kind-config.yaml
 ```
 
-**2. Create backend namespace with Helm labels (so Helm can adopt it)**  
 ```bash
-kubectl create namespace whiteboard-backend
-kubectl label namespace whiteboard-backend app.kubernetes.io/managed-by=Helm
-kubectl annotate namespace whiteboard-backend meta.helm.sh/release-name=whiteboard meta.helm.sh/release-namespace=whiteboard-backend
+# Build the seven images, load them into Kind, create auth-secrets,
+# then install the complete chart:
+cd backend
+helm install whiteboard ./chart -n whiteboard-backend
 ```
 
-**3. Deploy in-cluster MongoDB (optional; skip if using Atlas)**  
-```bash
-kubectl apply -f backend/k8s/mongodb.yaml
-kubectl wait -n whiteboard-backend --for=condition=ready pod -l app=mongodb --timeout=120s
-```
+Follow the ordered [Helm deployment guide](docs/helm-deployment.md); the Secret and image-loading steps are required.
 
-**4. Create secret (in-cluster MongoDB example; replace if using Atlas)**  
-```bash
-kubectl create secret generic auth-secrets -n whiteboard-backend \
-  --from-literal=MONGO_URI='mongodb://mongodb:27017/whiteboard' \
-  --from-literal=JWT_SECRET='YOUR_JWT_SECRET_MIN_32_CHARS'
-```
+## Related study
 
-**5. Build and load images**  
-```bash
-docker build -t auth-service:latest backend/auth-service
-docker build -t rooms-service:latest backend/rooms-service
-docker build -t drawings-service:latest backend/drawings-service
-docker build -t messages-service:latest backend/messages-service
-docker build -t realtime-service:latest backend/realtime-service
-docker build -t users-service:latest backend/users-service
-docker build -t frontend:latest frontend
-
-kind load docker-image auth-service:latest rooms-service:latest drawings-service:latest messages-service:latest realtime-service:latest users-service:latest frontend:latest --name whiteboard
-```
-
-**6. Install Helm chart**  
-```bash
-cd backend && helm install whiteboard ./chart -n whiteboard-backend
-```
-
-**7. Install NGINX Ingress Controller (Kind)**  
-```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
-```
-
-**8. Verify**  
-```bash
-kubectl get pods -n whiteboard-backend
-kubectl get pods -n whiteboard-frontend
-curl -s -o /dev/null -w "%{http_code}" http://localhost/health   # expect 200
-```  
-Open **http://localhost** in the browser.
-
----
-
-## Using Atlas instead of in-cluster MongoDB
-
-- Skip step 3. In step 4, set `MONGO_URI` to your Atlas URI (e.g. `mongodb+srv://user:pass@cluster.mongodb.net/whiteboard`).  
-- In Atlas: **Network Access** → add **0.0.0.0/0** (or your IP); ensure cluster is not paused.
-
----
-
-## Teardown
-
-```bash
-helm uninstall whiteboard -n whiteboard-backend
-kubectl delete namespace whiteboard-backend --ignore-not-found
-kubectl delete namespace whiteboard-frontend --ignore-not-found
-kind delete cluster --name whiteboard
-```
-
----
-
-## Detailed study of this project steps and methods
-
-- Here in the following, I have put the detailed steps, how this project was created, in order to get better understanding. Look at its readme.
-
-- [K8s Project study repo link](https://github.com/SidheshwarSarangal/study-of-k8s-method-project-of-white-board.git)
-
----
+- [Original whiteboard application](https://github.com/SidheshwarSarangal/whiteBoard)
+- [Step-by-step Kubernetes study](https://github.com/SidheshwarSarangal/study-of-k8s-method-project-of-white-board)
